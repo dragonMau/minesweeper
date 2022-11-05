@@ -11,25 +11,21 @@ class Game:
     over: bool
     
     def __init__(self, size: tuple[int, int]) -> None:
-        self.field = [[Cell(random()<1/4.85, -1) for _ in range(size[1])] for _ in range(size[0])]
+        self.field = [[Cell(random()<1/4.85, -1)\
+            for _ in range(size[1])] for _ in range(size[0])]
         self.moves = 0
         self.over = False
     
     def get_field(self):
-        r_field = [[0]*len(self.field[0])]*len(self.field)
-        for x, line in enumerate(self.field):
-            for y, cell in enumerate(line):
-                r_field[x][y] = cell.opened
-                if cell.mine and self.over:
-                    r_field[x][y] = 9
-        return r_field
+        return [[9 if cell.mine and self.over else cell.opened\
+            for cell in line] for line in self.field]
     
     def _is_mine(self, x, y):
-        if x < 0 or y < 0:
-            return False
-        try:
+        lx, ly = len(self.field), len(self.field[0])
+        if all((x>=0, y>=0, x<lx, y<ly)):
             return self.field[x][y].mine
-        except IndexError:
+        else:
+            # print("OutOfBounds")
             return False
         
     def open(self, x, y):
@@ -37,10 +33,20 @@ class Game:
             return -1, f"Cell {x,y} already opened"
         if self.field[x][y].mine:
             self.over = True
+            self.field[x][y].opened = 9
             return 0, f"Game over! There was mine"
         s = 0
         for tx in (-1,0,1):
             for ty in (-1,0,1):
-                s += self._is_mine(x-tx,y-ty)
+                s += self._is_mine(x+tx,y+ty)
+        
         self.field[x][y].opened = s
-        return s
+        if s != 0: return 1, f"Game continues"
+    
+        for tx in (-1,0,1):
+            for ty in (-1,0,1):
+                dx, dy = x+tx, y+ty
+                lx, ly = len(self.field), len(self.field[0])
+                if all((dx>=0, dy>=0, dx<lx, dy<ly)):
+                    self.open(dx, dy)
+        
