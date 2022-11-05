@@ -41,6 +41,7 @@ class Game:
                 s += self._is_mine(x+tx,y+ty)
         
         self.field[x][y].opened = s
+        self.moves += 1
         if s != 0: return 1, f"Game continues"
     
         for tx in (-1,0,1):

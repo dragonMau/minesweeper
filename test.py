@@ -11,9 +11,11 @@ def print_field(field):
             )
         print(*cl)
             
-game = Game((5, 5))
+game = Game((10, 30))
 
-print(game.open(2, 2))
+while not game.over:
+    print_field(game.get_field())
+    x, y = map(int, input("open x y: ").split())
+    print(game.open(y, x))
 
-# game.over = True
 print_field(game.get_field())
