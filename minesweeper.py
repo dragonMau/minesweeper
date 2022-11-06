@@ -12,7 +12,7 @@ class Game:
     
     def __init__(self, size: tuple[int, int]) -> None:
         w, h = size
-        samp = sample(range(w*h),k=int((w*h)//4.85))
+        samp = sample(range(w*h),k=int((w*h)//6))
         self.field = [[Cell(x+h*y in samp, -1) for x in range(w)] for y in range(h)]
         self.moves = 0
         self.over = False

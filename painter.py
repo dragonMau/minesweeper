@@ -10,12 +10,20 @@ def show_image(im, name='image'):
     cv2.destroyAllWindows()
 
 class parts:
+    default = np.zeros((32,32,3), np.uint8)
     cell = cv2.imread(f'{home}/assets/cell.png')
+    cell0 = cv2.imread(f'{home}/assets/cell0.png')
+    
     
 class maps:
     @staticmethod
     def default(cell, x, y):
-        return parts.cell
+        if cell == -1:
+            return parts.cell
+        if cell == 0:
+            return parts.cell0
+        else:
+            return parts.default
 
 def from_2d(l2d: list[list[int]], map):
     h = len(l2d)

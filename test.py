@@ -23,4 +23,5 @@ def test_game():
     print_field(game.get_field())
 
 game = Game((30, 17))
+game.open(10, 10)
 painter.show_image(painter.from_2d(game.get_field(), painter.maps.default))
