@@ -1,4 +1,4 @@
-from random import random
+from random import sample
 
 class Cell:
     def __init__(self, mine: bool, opened: int) -> None:
@@ -11,8 +11,9 @@ class Game:
     over: bool
     
     def __init__(self, size: tuple[int, int]) -> None:
-        self.field = [[Cell(random()<1/4.85, -1)\
-            for _ in range(size[1])] for _ in range(size[0])]
+        w, h = size
+        samp = sample(range(w*h),k=int((w*h)//4.85))
+        self.field = [[Cell(x+h*y in samp, -1) for x in range(w)] for y in range(h)]
         self.moves = 0
         self.over = False
     

@@ -1,4 +1,5 @@
 from minesweeper import Game
+import painter
 
 def print_field(field):
     for line in field:
@@ -10,12 +11,16 @@ def print_field(field):
                 c
             )
         print(*cl)
-            
-game = Game((10, 30))
 
-while not game.over:
+def test_game():
+    game = Game((30, 17))
+
+    while not game.over:
+        print_field(game.get_field())
+        x, y = map(int, input("open x y: ").split())
+        print(game.open(y, x))
+
     print_field(game.get_field())
-    x, y = map(int, input("open x y: ").split())
-    print(game.open(y, x))
 
-print_field(game.get_field())
+game = Game((30, 17))
+painter.show_image(painter.from_2d(game.get_field(), painter.maps.default))
