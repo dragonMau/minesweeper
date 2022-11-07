@@ -2,6 +2,8 @@ from random import sample
 
 class Cell:
     def __init__(self, mine: bool, opened: int) -> None:
+        if mine:
+            print("1", end="")
         self.mine = mine
         self.opened = opened # -1 closed, 0 no mines, 1-8 there is mines, 9 it is mine
 
@@ -10,10 +12,10 @@ class Game:
     moves: int
     over: bool
     
-    def __init__(self, size: tuple[int, int]) -> None:
+    def __init__(self, size: tuple[int, int], mines: int = 50) -> None:
         w, h = size
-        samp = sample(range(w*h),k=int((w*h)//6))
-        self.field = [[Cell(x+h*y in samp, -1) for x in range(w)] for y in range(h)]
+        samp = sample(range(w*h),k=mines)
+        self.field = [[Cell(x+w*y in samp, -1) for x in range(w)] for y in range(h)]
         self.moves = 0
         self.over = False
     
@@ -43,12 +45,23 @@ class Game:
         
         self.field[x][y].opened = s
         self.moves += 1
-        if s != 0: return 1, f"Game continues"
-    
-        for tx in (-1,0,1):
-            for ty in (-1,0,1):
-                dx, dy = x+tx, y+ty
-                lx, ly = len(self.field), len(self.field[0])
-                if all((dx>=0, dy>=0, dx<lx, dy<ly)):
-                    self.open(dx, dy)
+        
+        lx, ly = len(self.field), len(self.field[0])
+        if s == 0:
+            for tx in (-1,0,1):
+                for ty in (-1,0,1):
+                    dx, dy = x+tx, y+ty
+                    if all((dx>=0, dy>=0, dx<lx, dy<ly)):
+                        self.open(dx, dy)
+
+        s = 0
+        for row in self.field:
+            for c in row:
+                if c.mine or c.opened != -1:
+                    s += 1
+        if s == lx*ly:
+            self.over = True
+            return 0, f"Game over! You won!"
+                
+        return 1, f"Game continues"
         
