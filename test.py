@@ -47,6 +47,7 @@ def test_a():
         ans = game.open(*open_cell())
         if ans[0] != 1:
             print(ans[1])
+    
     cv2.imwrite("image.png", painter.from_2d(game.get_field(), painter.maps.default))
 
 def test_b():
