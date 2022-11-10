@@ -3,7 +3,6 @@ import cv2
 
 home = "."
 
-
 def show_image(im, name='image'):
     cv2.imshow(name, im)
     cv2.waitKey(0)
@@ -21,8 +20,10 @@ class parts:
     cell6 = cv2.imread(f'{home}/assets/cell6.png')
     cell7 = cv2.imread(f'{home}/assets/cell7.png')
     cell8 = cv2.imread(f'{home}/assets/cell8.png')
+    cellB = cv2.imread(f'{home}/assets/cellB.png')
+    cellE = cv2.imshow(f'{home}/assets/cellE.png')
+    cellM = cv2.imshow(f'{home}/assets/cellM.png')
     default = np.zeros((32,32,3), np.uint8)
-
 
 font_dict = {"A": (0,   0), "J": (0,  9), "1": (0,  18),
              "B": (5,   0), "K": (5,  9), "2": (5,  18),
@@ -61,6 +62,9 @@ class maps:
             case  6: return parts.cell6
             case  7: return parts.cell7
             case  8: return parts.cell8
+            case  9: return parts.cellB
+            case 10: return parts.cellE
+            case 11: return parts.cellM
             case  _: return parts.default
 
 def from_2d(l2d: list[list[int]], map_):
