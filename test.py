@@ -40,15 +40,19 @@ def open_cell():
             continue
         return r0, r1
 
+def update(game): # like update screen(vs code oreview)
+    cv2.imwrite("image.png", painter.from_2d(game.get_field(), painter.maps.default))
+
 def test_a():
     game = Game((30, 17), 5)
-    while not game.over:
-        cv2.imwrite("image.png", painter.from_2d(game.get_field(), painter.maps.default))
+    while not game.victory:
+        game.over = False
+        update(game)
         ans = game.open(*open_cell())
         if ans[0] != 1:
             print(ans[1])
     
-    cv2.imwrite("image.png", painter.from_2d(game.get_field(), painter.maps.default))
+    update(game)
 
 def test_b():
     t = painter.parts.font[9:18, 40:45]

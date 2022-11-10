@@ -22,7 +22,8 @@ class Game:
         self.victory = False
     
     def get_field(self):
-        return [[9 if cell.mine and self.over else cell.opened\
+        return [[10 if cell.opened == 10 else\
+               ((11 if self.victory else 9) if cell.mine and self.over else cell.opened)\
             for cell in line] for line in self.field]
     
     def _is_mine(self, x, y):

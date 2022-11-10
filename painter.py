@@ -21,8 +21,8 @@ class parts:
     cell7 = cv2.imread(f'{home}/assets/cell7.png')
     cell8 = cv2.imread(f'{home}/assets/cell8.png')
     cellB = cv2.imread(f'{home}/assets/cellB.png')
-    cellE = cv2.imshow(f'{home}/assets/cellE.png')
-    cellM = cv2.imshow(f'{home}/assets/cellM.png')
+    cellE = cv2.imread(f'{home}/assets/cellE.png')
+    cellM = cv2.imread(f'{home}/assets/cellM.png')
     default = np.zeros((32,32,3), np.uint8)
 
 font_dict = {"A": (0,   0), "J": (0,  9), "1": (0,  18),
