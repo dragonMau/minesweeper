@@ -116,6 +116,9 @@ class MyBot(discord.Client):
                                 if "won" in r[1]:
                                     await message.reply(f"All mines are defeated!", file=update_field(self.data["game"]))
                                     self.data["game_id"] = 0
+                                    await message.channel.send(f"results:\n"+\
+                                    "\n  - ".join(map(lambda e: (":boom: " if self.data["blown"][e] else ":tada: ")+e.name+'#'+e.discriminator,
+                                                      self.data['players'])))
                                 else:
                                     self.data["game"].over = False
                                     self.data["blown"][t] = True
