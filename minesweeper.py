@@ -2,8 +2,6 @@ from random import sample
 
 class Cell:
     def __init__(self, mine: bool, opened: int) -> None:
-        if mine:
-            print("1", end="")
         self.mine = mine
         self.opened = opened # -1 closed, 0 no mines, 1-8 there is mines, 9 it is mine, 10 blown, 11 marked
 
