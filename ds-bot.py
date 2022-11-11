@@ -47,7 +47,7 @@ class MyBot(discord.Client):
     async def on_message(self, message: discord.Message):
         if message.channel.id not in self.data["play_channels"]: return
         if message.content.startswith("md!"):
-            command, *args = message.content[3:].strip().split()
+            command, *args = message.content[3:].strip().lower().split()
             async with message.channel.typing():
                 match command:
                     case "calc":
@@ -130,6 +130,9 @@ class MyBot(discord.Client):
                                             await message.reply(f":boom: :boom: :boom:\n"+\
                                                                 f"Game over: All players were blown up.",
                                                                 file=update_field(self.data["game"]))
+                                            await message.channel.send(f"results:\n"+\
+                                    "\n  - ".join(map(lambda e: (":boom: " if self.data["blown"][e] else ":tada: ")+e.name+'#'+e.discriminator,
+                                                      self.data['players'])))
                                             return
                                         
                                     await message.reply(f":boom: {t.name}#{t.discriminator} was blown up!"+\
