@@ -60,14 +60,18 @@ class MyBot(discord.Client):
                         if self.data["game_id"] == 0:
                             self.data["game_id"] = message.id
                             self.data["game_admin"] = message.author
-                            mines = 100
+                            mines, height, width = 100, 17, 30
                             for i in args:
-                                if i.startswith("mines="):
-                                    try:
+                                try:
+                                    if i.startswith("mines="):
                                         mines = int(i.split("=")[1])
-                                    except:
-                                        pass
-                            self.data["game"] = minesweeper.Game((30, 17), mines)
+                                    if i.startswith("height="):
+                                        height = int(i.split("=")[1])
+                                        if height>17: height = 17
+                                    if i.startswith("width="):
+                                        width = int(i.split("=")[1])
+                                except: pass
+                            self.data["game"] = minesweeper.Game((width, height), mines) # 30 17
                             self.data["players"] = [i for i in message.mentions 
                                                     if i not in [self.user, message.author]]+[message.author]
                             random.shuffle(self.data["players"])
@@ -167,7 +171,7 @@ class MyBot(discord.Client):
                             "\n  - `calc`: calculate expression [2+2 etc.]"+\
                             "\n  - `play`: start minesweeper game [@joe @aboba mines=10 etc.]"+\
                             "\n          include all mentions  and arguments in command"+\
-                            "\n          arguments: [mines=<int>]"+\
+                            "\n          arguments: [mines=<int> height=<(int<=17)> width=<int>]"+\
                             "\n  - `stop`: stop curenlty running game (only one at time can be active)"+\
                             "\n  - `start`: confirm game starting"+\
                             "\n  - `move`: make your move, [move A00 etc.]"+\
