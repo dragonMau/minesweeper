@@ -143,6 +143,16 @@ class MyBot(discord.Client):
                                     if not self.data["blown"][self.data["turn"]]: break
                                 await message.reply(f"\nturn: {self.data['turn']}",
                                                     file=update_field(self.data["game"]))
+                    case "kick":
+                        if self.data["game_id"] == 0:
+                            await message.reply("there is no active games now!")
+                            return
+                        if any((message.author.guild_permissions.administrator,
+                            message.author == self.data["game_admin"])):
+                            self.data["game_id"] = 0
+                            await message.reply("game stopped")
+                        else:
+                            await message.reply("you have no permission to kick mplayers from this game")
                     case c:
                         await message.reply(f"unknown command \"{c}\"")
         
