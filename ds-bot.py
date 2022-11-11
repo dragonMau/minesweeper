@@ -1,4 +1,5 @@
 import json
+import random
 
 
 import discord, cv2
@@ -14,21 +15,17 @@ def update_field(game) -> BytesIO:
     return discord.File(BytesIO(cv2.imencode(".png", arr)[1]), "field.png")
 
 def open_cell(ooo):
-    while True:
-        a = ooo.upper()
-        if len(a) != 3:
-            print(f"index must be formattede as A00")
-            continue
-        try:
-            r0 = "ABCDEFGHIJKLMNOPQ".find(a[0])
-            r1 = int(a[1:3])
-        except:
-            print(f"index must be formattede as A00")
-            continue
-        if r0 == -1 or r1 < 0 or r1 > 29:
-            print(f"no such cell {a}")
-            continue
-        return r0, r1
+    a = ooo.upper()
+    if len(a) != 3:
+        raise Exception(f"index must be formattede as A00")
+    try:
+        r0 = "ABCDEFGHIJKLMNOPQ".find(a[0])
+        r1 = int(a[1:3])
+    except:
+        raise Exception(f"index must be formattede as A00")
+    if r0 == -1 or r1 < 0 or r1 > 29:
+        raise Exception(f"no such cell {a}")
+    return r0, r1
 
 class MyBot(discord.Client):
     data: dict
@@ -63,13 +60,22 @@ class MyBot(discord.Client):
                         if self.data["game_id"] == 0:
                             self.data["game_id"] = message.id
                             self.data["game_admin"] = message.author
-                            self.data["game"] = minesweeper.Game((30, 17), 100)
-                            self.data["players"] = [i for i in message.mentions if i != self.user]+[message.author]
+                            mines = 100
+                            for i in args:
+                                if i.startswith("mines="):
+                                    try:
+                                        mines = int(i.split("=")[1])
+                                    except:
+                                        pass
+                            self.data["game"] = minesweeper.Game((30, 17), mines)
+                            self.data["players"] = [i for i in message.mentions 
+                                                    if i not in [self.user, message.author]]+[message.author]
+                            random.shuffle(self.data["players"])
                             self.data["turn"] = self.data["players"][0]
                             self.data["blown"] = {}
                             for i in self.data["players"]:
                                 self.data["blown"][i] = False
-                            await message.reply(f"minesweeper; players:\n  - "+\
+                            await message.reply(f"minesweeper, {mines=};\nplayers:\n  - "+\
                                 "\n  - ".join(map(lambda e: e.name+'#'+e.discriminator,self.data['players']))+\
                                 "\nsend `md!start` to start this game or `md!stop` to cancel")
                         else:
@@ -88,8 +94,6 @@ class MyBot(discord.Client):
                         if self.data["game_id"] == 0:
                             await message.reply("there is no active games now!")
                             return
-                        self.data["game"].field[8][15].mine = False
-                        self.data["game"].open(8, 15)
                         await message.reply(
                             f"turn: {self.data['turn'].name}#{self.data['turn'].discriminator};",
                             file=update_field(self.data['game'])
@@ -101,7 +105,11 @@ class MyBot(discord.Client):
                         if (t:=self.data["turn"]) != message.author:
                             await message.reply(f"it is {t} turn")
                             return
-                        r = self.data["game"].open(*open_cell(''.join(args)))
+                        try:
+                            r = self.data["game"].open(*open_cell(''.join(args)))
+                        except Exception as e:
+                            await message.reply(f"{e}")
+                            return
                         match r[0]:
                             case -1: await message.reply(f"cell {''.join(args)} already opened")
                             case 0:
@@ -137,21 +145,6 @@ class MyBot(discord.Client):
                                                     file=update_field(self.data["game"]))
                     case c:
                         await message.reply(f"unknown command \"{c}\"")
-            
-    # on message "start game" should ask 
-    # minesweeper game, id; react :play:; game starts in <t:time+5:R>;
-    # who will play (get by reactions "i play!")
-    # after waiting time should send
-    # game started; players; <field.image>; whose turn
-    # on "help" send short instruction, [a00, idk]
-    # on "stop" from creator stop game
-    # on move answer if it is legall move[user, structure] and if it is
-    # send players; <field.image>; whose turn; 
-    # again (next turn i mean)
-    # after someone blows-up add :blow: after his nickname and cut his next turns
-    # after everyone blows-up send "you lose" and field with exposed bombs
-    # after all bombs defeated send "you won" with all bombs marked (except blown)
-    # and winners/loosers/total moves etc.
         
 if __name__=="__main__":
     bot = MyBot()
