@@ -149,10 +149,13 @@ class MyBot(discord.Client):
                             return
                         if any((message.author.guild_permissions.administrator,
                             message.author == self.data["game_admin"])):
-                            self.data["game_id"] = 0
-                            await message.reply("game stopped")
+                            if args[0] in [self.data["turn"].mention,
+                                           f"{self.data['turn'].name}#{self.data['turn'].discriminator}"]:
+                                await message.reply(f"{args[0]} were blown!")
+                            else:
+                                await message.reply(f"you can kick only player only on their turn")
                         else:
-                            await message.reply("you have no permission to kick mplayers from this game")
+                            await message.reply("you have no permission to kick players from this game")
                     case c:
                         await message.reply(f"unknown command \"{c}\"")
         
