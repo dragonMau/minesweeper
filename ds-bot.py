@@ -156,6 +156,18 @@ class MyBot(discord.Client):
                                 await message.reply(f"you can kick only player only on their turn")
                         else:
                             await message.reply("you have no permission to kick players from this game")
+                    case "help":
+                        await message.reply(f"command list (prefix `md!`): "+\
+                            "\n  - `calc`: calculate expression [2+2 etc.]"+\
+                            "\n  - `play`: start minesweeper game [@joe @aboba mines=10 etc.]"+\
+                            "\n          include all mentions  and arguments in command"+\
+                            "\n          arguments: [mines=<int>]"+\
+                            "\n  - `stop`: stop curenlty running game (only one at time can be active)"+\
+                            "\n  - `start`: confirm game starting"+\
+                            "\n  - `move`: make your move, [move A00 etc.]"+\
+                            "\n  - `kick`: kick, for example, afk player [kick Joe#3841 etc.]"+\
+                            "\n  - `help`: shows this message"
+                            )
                     case c:
                         await message.reply(f"unknown command \"{c}\"")
         
