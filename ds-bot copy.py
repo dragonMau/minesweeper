@@ -111,8 +111,8 @@ class MyBot(discord.Client):
         else:
             return (0, False)
     
-    def g_s_get_turn(self, gid: int) -> int:
-        for k, player in self.data["games_by_id"][gid]["players"].items():
+    def g_s_get_turn(self, game) -> int:
+        for k, player in game["players"].items():
             if player["turn"]: return k
         
     async def g_play(self, message: discord.Message, command: str, args: list[str]) -> int:
@@ -158,7 +158,7 @@ class MyBot(discord.Client):
         if not isa:
             await message.reply("Only admin of the game can start it."); return 0
         
-        cont = f"turn: <@{self.g_s_get_turn(gid)}>\n"
+        cont = f"turn: <@{self.g_s_get_turn(game)}>\n"
         await message.reply(cont, file=update_field(game["game"]))
         return 0
         
