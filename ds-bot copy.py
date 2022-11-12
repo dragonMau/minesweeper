@@ -68,7 +68,7 @@ class MyBot(discord.Client):
             await message.reply(f"{e}")
             
     def g_s_configure_args(self, args: list[str]) -> tuple[int, int, int]:
-        h, w, m = 17, 30, 100
+        h, w, m = 17, 30, None
         for i in args:
             try:
                 if i.startswith("mines="):
@@ -79,6 +79,7 @@ class MyBot(discord.Client):
                 if i.startswith("width="):
                     w = int(i.split("=")[1])
             except: pass
+        if m is None: m = int(h*w/4.85)
         return h, w, m
     
     def g_s_get_all_active_players(self, count_blown=False) -> list[int]:
@@ -89,15 +90,15 @@ class MyBot(discord.Client):
         return ac_p
     
     def g_s_register_players(self, mentions, admin) -> list[int]:
-        plyrs = [admin]
+        players = []
         ac_p = self.g_s_get_all_active_players()
-        for i in mentions:
-            if i not in plyrs+[self.user.id]:
+        for i in mentions+[admin]:
+            if i not in players+[self.user.id]:
                 if i in ac_p:
-                    raise KeyError(f"<@{i}> already playing another game")
-                plyrs.append(i)
-        random.shuffle(plyrs)
-        return plyrs
+                    raise KeyError(f"<@{i}> already playing another game.")
+                players.append(i)
+        random.shuffle(players)
+        return players
     
     def g_s_get_player(self, pid: int) -> tuple[int, bool]:
         """returns tuple (game_id, is_admin)
@@ -120,9 +121,14 @@ class MyBot(discord.Client):
             message.reply(f"There is too much active games now."); return 0
             
         height, width, mines = self.g_s_configure_args(args)
+        if height*width < mines:
+            await message.reply(
+                f"This amount of mines ({mines}) cant fit in field {(width, height)}.".replace(",", ";"))
+            return 0
+        
         try: players = self.g_s_register_players(
             [i.id for i in message.mentions], message.author.id)
-        except KeyError as e: await message.reply(e); return 1
+        except KeyError as e: await message.reply(str(e).strip("'")); return 1
         
         self.data["games_by_id"][message.id] = {
             "started": False,
