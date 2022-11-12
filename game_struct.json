@@ -1,0 +1,15 @@
+{
+    "active_games": [12],
+    "games_by_id": {
+        "12": {
+            "admin": 12345,
+            "game": "python_game_object",
+            "players": {
+                "12345": {
+                    "blown": 0,
+                    "turn": 1
+                }
+            }
+        }
+    }
+}
