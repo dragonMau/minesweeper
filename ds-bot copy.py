@@ -83,9 +83,9 @@ class MyBot(discord.Client):
     
     def g_s_get_all_active_players(self, count_blown=False) -> list[int]:
         ac_p = []
-        for game in self.data["games_by_id"]:
-            ac_p.extend(a for a in game["players"].keys()
-                        if not a["blown"] or count_blown)
+        for game in self.data["games_by_id"].values():
+            ac_p.extend(id for id, pl in game["players"].items()
+                        if not pl["blown"] or count_blown)
         return ac_p
     
     def g_s_register_players(self, mentions, admin) -> list[int]:
@@ -94,7 +94,7 @@ class MyBot(discord.Client):
         for i in mentions:
             if i not in plyrs+[self.user.id]:
                 if i in ac_p:
-                    raise Exception(f"<@{i}> already playing another game")
+                    raise KeyError(f"<@{i}> already playing another game")
                 plyrs.append(i)
         random.shuffle(plyrs)
         return plyrs
@@ -104,7 +104,7 @@ class MyBot(discord.Client):
         
         game_id = 0 if player is not playing"""
         if pid in self.g_s_get_all_active_players(count_blown=True):
-            for gid, g in zip(self.data["games_by_id"].items()):
+            for gid, g in self.data["games_by_id"].items():
                 for p in g["players"].keys():
                     if p == pid:
                         return (gid, g["admin"] == p)
@@ -112,31 +112,31 @@ class MyBot(discord.Client):
             return (0, False)
     
     def g_s_get_turn(self, gid: int) -> int:
-        for k, player in zip(self.data["games_by_id"][gid]["players"].items()):
+        for k, player in self.data["games_by_id"][gid]["players"].items():
             if player["turn"]: return k
         
     async def g_play(self, message: discord.Message, command: str, args: list[str]) -> int:
         if len(self.data["active_games"]) > 5:
-            message.reply(f"there is too much active games"); return 0
+            message.reply(f"There is too much active games now."); return 0
             
         height, width, mines = self.g_s_configure_args(args)
+        try: players = self.g_s_register_players(
+            [i.id for i in message.mentions], message.author.id)
+        except KeyError as e: await message.reply(e); return 1
         
         self.data["games_by_id"][message.id] = {
             "started": False,
             "admin": message.author.id,
-            "game": minesweeper.Game((height, width), mines),
-            "players": {}}
+            "game": minesweeper.Game((width, height), mines),
+            "players": {p: {"blown": False, "turn": False} for p in players}
+        }
+        
         game_in = self.data["games_by_id"][message.id]
         pl_list = game_in["players"]
-        
-        try: players = self.g_s_register_players([i.id for i in message.mentions], message.author.id)
-        except Exception as e: message.reply(e); return 1
-        for p in players:
-            pl_list[p] = {"blown": False, "turn": False}
         pl_list[game_in["admin"]]["turn"] = True
         
         head = f"minesweepr, {mines=};\nplayers:"
-        body = [f"\n  - <@{pid}>" for pid in players]
+        body = ''.join([f"\n  - <@{pid}>" for pid in players])
         tail = "\nsend `md!start` to start this game or `md!stop` to cancel"
         await message.reply(head+body+tail)
         return 0
@@ -148,13 +148,13 @@ class MyBot(discord.Client):
         pass # todo
     
     async def g_start(self, message: discord.Message, command: str, args: list[str]) -> int:
-        gid, isa = self.g_s_get_player(message.id)
+        gid, isa = self.g_s_get_player(message.author.id)
         if gid == 0: 
             await message.reply("You are not in any game now."); return 0
         game = self.data["games_by_id"][gid]
         
         if game["started"]:
-            await message.reply("This game already started."); return 0
+            await message.reply("This game is already started."); return 0
         if not isa:
             await message.reply("Only admin of the game can start it."); return 0
         
