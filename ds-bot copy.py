@@ -28,7 +28,21 @@ def open_cell(ooo):
     return r0, r1
 
 class MyBot(discord.Client):
-    data: dict
+    data: dict[
+        "parser": Parser,
+        "active_games": list[int],
+        "token": str,
+        "play_channels": list[int],
+        "games_by_id": dict[
+            int: dict[
+                "started": bool,
+                "admin": int,
+                "game": minesweeper.Game,
+                "players": dict[
+                    int: dict[
+                        "blown": bool,
+                        "turn": bool
+    ]]]]]
     
     def __init__(self, *, loop=None, **options):
         with open("d://Users/mseli/data/2.txt", "r") as f:
@@ -53,7 +67,7 @@ class MyBot(discord.Client):
         except Exception as e:
             await message.reply(f"{e}")
             
-    def g_s_configure_args(self, args) -> tuple[int, int, int]:
+    def g_s_configure_args(self, args: list[str]) -> tuple[int, int, int]:
         h, w, m = 17, 30, 100
         for i in args:
             try:
@@ -67,11 +81,11 @@ class MyBot(discord.Client):
             except: pass
         return h, w, m
     
-    def g_s_get_all_active_players(self) -> list[int]:
+    def g_s_get_all_active_players(self, count_blown=False) -> list[int]:
         ac_p = []
         for game in self.data["games_by_id"]:
             ac_p.extend(a for a in game["players"].keys()
-                        if a["blown"] == False)
+                        if not a["blown"] or count_blown)
         return ac_p
     
     def g_s_register_players(self, mentions, admin) -> list[int]:
@@ -80,10 +94,26 @@ class MyBot(discord.Client):
         for i in mentions:
             if i not in plyrs+[self.user.id]:
                 if i in ac_p:
-                    raise Exception(f"<@{i}> already playing a game")
+                    raise Exception(f"<@{i}> already playing another game")
                 plyrs.append(i)
         random.shuffle(plyrs)
         return plyrs
+    
+    def g_s_get_player(self, pid: int) -> tuple[int, bool]:
+        """returns tuple (game_id, is_admin)
+        
+        game_id = 0 if player is not playing"""
+        if pid in self.g_s_get_all_active_players(count_blown=True):
+            for gid, g in zip(self.data["games_by_id"].items()):
+                for p in g["players"].keys():
+                    if p == pid:
+                        return (gid, g["admin"] == p)
+        else:
+            return (0, False)
+    
+    def g_s_get_turn(self, gid: int) -> int:
+        for k, player in zip(self.data["games_by_id"][gid]["players"].items()):
+            if player["turn"]: return k
         
     async def g_play(self, message: discord.Message, command: str, args: list[str]) -> int:
         if len(self.data["active_games"]) > 5:
@@ -92,6 +122,7 @@ class MyBot(discord.Client):
         height, width, mines = self.g_s_configure_args(args)
         
         self.data["games_by_id"][message.id] = {
+            "started": False,
             "admin": message.author.id,
             "game": minesweeper.Game((height, width), mines),
             "players": {}}
@@ -108,19 +139,34 @@ class MyBot(discord.Client):
         body = [f"\n  - <@{pid}>" for pid in players]
         tail = "\nsend `md!start` to start this game or `md!stop` to cancel"
         await message.reply(head+body+tail)
-        
+        return 0
+    
+    async def g_leave(self, message: discord.Message, command: str, args: list[str]) -> int:
+        pass # todo
     
     async def g_stop(self, message: discord.Message, command: str, args: list[str]) -> int:
-        pass
+        pass # todo
     
     async def g_start(self, message: discord.Message, command: str, args: list[str]) -> int:
-        pass
+        gid, isa = self.g_s_get_player(message.id)
+        if gid == 0: 
+            await message.reply("You are not in any game now."); return 0
+        game = self.data["games_by_id"][gid]
+        
+        if game["started"]:
+            await message.reply("This game already started."); return 0
+        if not isa:
+            await message.reply("Only admin of the game can start it."); return 0
+        
+        cont = f"turn: <@{self.g_s_get_turn(gid)}>\n"
+        await message.reply(cont, file=update_field(game["game"]))
+        return 0
         
     async def g_move(self, message: discord.Message, command: str, args: list[str]) -> int:
-        pass 
+        pass # todo
     
     async def g_kick(self, message: discord.Message, command: str, args: list[str]) -> int:
-        pass
+        pass # todo
             
     async def g_help(self, message: discord.Message, command: str, args: list[str]) -> int:
         await message.reply(f"command list (prefix `md!`): "+\
@@ -148,6 +194,7 @@ class MyBot(discord.Client):
                     case "move":  await self.g_move (message, command, args)
                     case "kick":  await self.g_kick (message, command, args)
                     case "help":  await self.g_help (message, command, args)
+                    case "leave": await self.g_leave(message, command, args)
                     case c: await message.reply(f"unknown command \"{c}\"")
         
 if __name__=="__main__":
