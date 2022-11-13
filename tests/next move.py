@@ -1,7 +1,11 @@
 import json
 
 ids = [12345, 23456, 34567, 45678, 56789]
-pl_list = {k: {"turn": False, "blown": False} for k in ids}
+pl_list = {"a":{k: {"turn": False, "blown": False} for k in ids}}
+
+a = pl_list["a"]
+del a[23456]
+print(json.dumps(pl_list, indent=4))
 
 def next_user():
     next = False
@@ -20,7 +24,10 @@ def turn_player():
     for v in pl_list.values():
         if v["turn"]: return v
     raise KeyError
-    
+
+print(len(pl_list))
+
+exit()
 while True:
     if input(json.dumps(pl_list, indent=4)) == "_":
         try: turn_player()["blown"] = True

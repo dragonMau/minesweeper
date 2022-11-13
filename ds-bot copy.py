@@ -33,7 +33,7 @@ class MyBot(discord.Client):
         "active_games": list[int],
         "token": str,
         "play_channels": list[int],
-        "games_by_id": dict[
+        "games": dict[
             int: dict[
                 "started": bool,
                 "admin": int,
@@ -50,7 +50,7 @@ class MyBot(discord.Client):
             
         self.data["parser"] = Parser()
         self.data["active_games"] = []
-        self.data["games_by_id"] = {}
+        self.data["games"] = {}
         
         intents = discord.Intents.default()
         intents.message_content = True
@@ -84,7 +84,7 @@ class MyBot(discord.Client):
     
     def g_s_get_all_active_players(self, count_blown=False) -> list[int]:
         ac_p = []
-        for game in self.data["games_by_id"].values():
+        for game in self.data["games"].values():
             ac_p.extend(id for id, pl in game["players"].items()
                         if not pl["blown"] or count_blown)
         return ac_p
@@ -105,7 +105,7 @@ class MyBot(discord.Client):
         
         game_id = 0 if player is not playing"""
         if pid in self.g_s_get_all_active_players(count_blown=True):
-            for gid, g in self.data["games_by_id"].items():
+            for gid, g in self.data["games"].items():
                 for p in g["players"].keys():
                     if p == pid:
                         return (gid, g["admin"] == p)
@@ -117,28 +117,46 @@ class MyBot(discord.Client):
             if player["turn"]: return k
         return 0
     
-    def g_s_switch_turn(self, game):
+    def g_s_switch_turn(self, game) -> int:
         next = False
         for v in game["players"].values():
             if next and not v["blown"]:
-                v["turn"] = True; return
+                v["turn"] = True; return 0
             if v["turn"]:
                 v["turn"], next = False, True
         for v in game["players"].values():
             if not v["blown"]:
-                v["turn"] = True; return
+                v["turn"] = True; return 0
+        return 1
     
-    async def g_s_victory(self, message: discord.Message, game: dict):
-        pass # todo
+    async def g_s_over(self, message: discord.Message, gid: int, victory=True):
+        game=self.data["games"][gid]
+        await message.reply(":tada: "*3+"\nAll cells were opened!" if victory else 
+                            ":boom: "*3+"\nAll players were blown up!",
+                            file=update_field(game["game"]),
+                            author_mention=False)
+        head = "results:\n"
+        body = ''.join([f"\n  - :{'boom' if v['blown'] else 'tada'}: <@{k}>" 
+                for k, v in game["players"].items()])
+        del self.data["games"][gid]
+        await message.channel.send(head+body)
+        
     
-    async def g_s_loose(self, message: discord.Message, game: dict):
-        pass # todo
+    async def g_s_loose(self, message: discord.Message, gid: int, pid: int):
+        games = self.data["games"]
+        games[gid]["game"].over = False
+        games[gid]["players"][pid]["blown"] = True
+        if self.g_s_switch_turn(games[gid]): # if everyone blown
+            self.g_s_over(message, gid, victory=False)
     
-    async def g_s_continue(self, message: discord.Message, game: dict):
-        pass # todo
+    async def g_s_continue(self, message: discord.Message, gid: int, pid: int):
+        game = self.data["games"][gid]
+        self.g_s_switch_turn(game)
+        await message.reply(f"\nTurn: {self.g_s_get_turn(game)}",
+                            file=update_field(game["game"]))
     
     async def g_play(self, message: discord.Message, command: str, args: list[str]) -> int:
-        if len(self.data["active_games"]) > 5:
+        if len(self.data["games"]) > 5:
             message.reply(f"There is too much active games now."); return 0
             
         height, width, mines = self.g_s_configure_args(args)
@@ -151,7 +169,7 @@ class MyBot(discord.Client):
             [i.id for i in message.mentions], message.author.id)
         except KeyError as e: await message.reply(f"{e}"); return 1
         
-        self.data["games_by_id"][message.id] = {
+        self.data["games"][message.id] = {
             "started": False,
             "admin": message.author.id,
             "game": minesweeper.Game((width, height), mines),
@@ -165,39 +183,53 @@ class MyBot(discord.Client):
         return 0
     
     async def g_leave(self, message: discord.Message, command: str, args: list[str]) -> int:
-        pass # todo
+        gid, isa = self.g_s_get_player(pid:=message.author.id)
+        if gid == 0:
+            await message.reply("You are not in any game now.")
+            return 0
+        game = self.data["games"][gid]
+        turn = self.g_s_get_turn(game)
+        game["players"][pid]["blown"] = True
+        await message.reply(":boom: You just self-blowed!")
     
     async def g_stop(self, message: discord.Message, command: str, args: list[str]) -> int:
-        pass # todo
-    
+        gid, isa = self.g_s_get_player(pid:=message.author.id)
+        if gid == 0:
+            await message.reply("You are not in any game now."); return 0
+        game = self.data["games"][gid]
+        if message.author.guild_permissions.administrator or isa:
+            del self.data["games"][gid]
+            await message.reply("Game stopped.")
+        else:
+            await message.reply("You have no permission to stop this game.")
+        
     async def g_start(self, message: discord.Message, command: str, args: list[str]) -> int:
         gid, isa = self.g_s_get_player(message.author.id)
         if gid == 0: 
             await message.reply("You are not in any game now."); return 0
-        game = self.data["games_by_id"][gid]
+        game = self.data["games"][gid]
         
         if game["started"]:
             await message.reply("This game is already started."); return 0
         if not isa:
             await message.reply("Only admin of the game can start it."); return 0
         
-        self.g_s_switch_turn()
+        self.g_s_switch_turn(game)
         cont = f"turn: <@{self.g_s_get_turn(game)}>\n"
         await message.reply(cont, file=update_field(game["game"]))
         return 0
         
     async def g_move(self, message: discord.Message, command: str, args: list[str]) -> int:
-        pid = message.author.id
-        gid, isa = self.g_s_get_player(pid)
+        gid, isa = self.g_s_get_player(pid:=message.author.id)
         if gid == 0:
             await message.reply("You are not in any game now.")
             return 0
-        
-        game = self.data["games_by_id"][gid]
+        game = self.data["games"][gid]
         turn = self.g_s_get_turn(game)
         if turn != pid:
             await message.reply(f"It is <@{turn}> turn!")
             return 0
+        
         try:
             r = game["game"].open(*open_cell(''.join(args)))
         except (SyntaxError, KeyError) as e:
@@ -206,13 +238,33 @@ class MyBot(discord.Client):
             case -1:
                 await message.reply(f"cell {''.join(args)} already opened")
             case 0:
-                if "won" in r[1]: await self.g_s_victory(message, game)
-                else: await self.g_s_loose(message, game)
-            case 1: await self.g_s_continue(message, game)
+                if "won" in r[1]: await self.g_s_over(message, gid)
+                else: await self.g_s_loose(message, gid, pid)
+            case 1: await self.g_s_continue(message, gid, pid)
         return 0
     
     async def g_kick(self, message: discord.Message, command: str, args: list[str]) -> int:
-        pass # todo
+        gid, isa = self.g_s_get_player(pid:=message.author.id)
+        if gid == 0:
+            await message.reply("You are not in any game now."); return 0
+        game = self.data["games"][gid]
+        if isa:
+            if len(args)==0:
+                await message.reply("User is required!")
+                return
+            kid = self.g_s_get_turn(game)
+            knd=""
+            await message.reply(f"<@{kid}>")
+            if kid:
+                ku = self.get_user(kid)
+                knd = f"{ku.name}#{ku.discriminator}"
+            if args[0].strip("<@>") in (kid, knd):
+                game["players"][kid]["blown"] = True
+                await message.reply(f":boom: <@{kid}> were blown!")
+            else:
+                await message.reply("You can kick players only on their turn.")
+        else:
+            await message.reply("You have no permission to stop this game.")
             
     async def g_help(self, message: discord.Message, command: str, args: list[str]) -> int:
         await message.reply(f"command list (prefix `md!`): "+\
