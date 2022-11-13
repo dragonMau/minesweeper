@@ -17,14 +17,14 @@ def update_field(game) -> BytesIO:
 def open_cell(ooo):
     a = ooo.upper()
     if len(a) != 3:
-        raise Exception(f"index must be formattede as A00")
+        raise SyntaxError(f"index must be formattede as A00")
     try:
         r0 = "ABCDEFGHIJKLMNOPQ".find(a[0])
         r1 = int(a[1:3])
     except:
-        raise Exception(f"index must be formattede as A00")
+        raise SyntaxError(f"index must be formattede as A00")
     if r0 == -1 or r1 < 0 or r1 > 29:
-        raise Exception(f"no such cell {a}")
+        raise KeyError(f"no such cell {a}")
     return r0, r1
 
 class MyBot(discord.Client):
@@ -115,7 +115,28 @@ class MyBot(discord.Client):
     def g_s_get_turn(self, game) -> int:
         for k, player in game["players"].items():
             if player["turn"]: return k
-        
+        return 0
+    
+    def g_s_switch_turn(self, game):
+        next = False
+        for v in game["players"].values():
+            if next and not v["blown"]:
+                v["turn"] = True; return
+            if v["turn"]:
+                v["turn"], next = False, True
+        for v in game["players"].values():
+            if not v["blown"]:
+                v["turn"] = True; return
+    
+    async def g_s_victory(self, message: discord.Message, game: dict):
+        pass # todo
+    
+    async def g_s_loose(self, message: discord.Message, game: dict):
+        pass # todo
+    
+    async def g_s_continue(self, message: discord.Message, game: dict):
+        pass # todo
+    
     async def g_play(self, message: discord.Message, command: str, args: list[str]) -> int:
         if len(self.data["active_games"]) > 5:
             message.reply(f"There is too much active games now."); return 0
@@ -128,7 +149,7 @@ class MyBot(discord.Client):
         
         try: players = self.g_s_register_players(
             [i.id for i in message.mentions], message.author.id)
-        except KeyError as e: await message.reply(str(e).strip("'")); return 1
+        except KeyError as e: await message.reply(f"{e}"); return 1
         
         self.data["games_by_id"][message.id] = {
             "started": False,
@@ -136,10 +157,6 @@ class MyBot(discord.Client):
             "game": minesweeper.Game((width, height), mines),
             "players": {p: {"blown": False, "turn": False} for p in players}
         }
-        
-        game_in = self.data["games_by_id"][message.id]
-        pl_list = game_in["players"]
-        pl_list[game_in["admin"]]["turn"] = True
         
         head = f"minesweepr, {mines=};\nplayers:"
         body = ''.join([f"\n  - <@{pid}>" for pid in players])
@@ -164,12 +181,35 @@ class MyBot(discord.Client):
         if not isa:
             await message.reply("Only admin of the game can start it."); return 0
         
+        self.g_s_switch_turn()
         cont = f"turn: <@{self.g_s_get_turn(game)}>\n"
         await message.reply(cont, file=update_field(game["game"]))
         return 0
         
     async def g_move(self, message: discord.Message, command: str, args: list[str]) -> int:
-        pass # todo
+        pid = message.author.id
+        gid, isa = self.g_s_get_player(pid)
+        if gid == 0:
+            await message.reply("You are not in any game now.")
+            return 0
+        
+        game = self.data["games_by_id"][gid]
+        turn = self.g_s_get_turn(game)
+        if turn != pid:
+            await message.reply(f"It is <@{turn}> turn!")
+            return 0
+        try:
+            r = game["game"].open(*open_cell(''.join(args)))
+        except (SyntaxError, KeyError) as e:
+            await message.reply(f"{e}"); return 0
+        match r[0]:
+            case -1:
+                await message.reply(f"cell {''.join(args)} already opened")
+            case 0:
+                if "won" in r[1]: await self.g_s_victory(message, game)
+                else: await self.g_s_loose(message, game)
+            case 1: await self.g_s_continue(message, game)
+        return 0
     
     async def g_kick(self, message: discord.Message, command: str, args: list[str]) -> int:
         pass # todo
