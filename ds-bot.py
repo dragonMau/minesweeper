@@ -31,9 +31,9 @@ class MyBot(discord.Client):
     data: dict
     
     def __init__(self, *, loop=None, **options):
-        with open("d://Users/mseli/data/2.txt", "r") as f:
+        with open("data/config.json", "r") as f:
             self.data = json.load(f)
-            
+
         self.data["parser"] = Parser()
         
         intents = discord.Intents.default()
@@ -67,7 +67,7 @@ class MyBot(discord.Client):
                         width = int(i.split("=")[1])
                 except: pass
             self.data["game"] = minesweeper.Game((width, height), mines) # 30 17
-            self.data["players"] = [i.id for i in message.mentions 
+            self.data["players"] = [i for i in message.mentions 
                                     if i not in [self.user, message.author]]+[message.author]
             random.shuffle(self.data["players"])
             self.data["turn"] = self.data["players"][0]
@@ -118,7 +118,7 @@ class MyBot(discord.Client):
                 if "won" in r[1]:
                     await message.reply(f"All mines are defeated!", file=update_field(self.data["game"]))
                     self.data["game_id"] = 0
-                    await message.channel.send(f"results:\n"+\
+                    await message.channel.send(f"results:\n  - "+\
                     "\n  - ".join(map(lambda e: (":boom: " if self.data["blown"][e] else ":tada: ")+e.name+'#'+e.discriminator,
                                         self.data['players'])))
                 else:
@@ -135,7 +135,7 @@ class MyBot(discord.Client):
                             await message.reply(f":boom: :boom: :boom:\n"+\
                                                 f"Game over: All players were blown up.",
                                                 file=update_field(self.data["game"]))
-                            await message.channel.send(f"results:\n"+\
+                            await message.channel.send(f"results:\n  - "+\
                     "\n  - ".join(map(lambda e: (":boom: " if self.data["blown"][e] else ":tada: ")+e.name+'#'+e.discriminator,
                                         self.data['players'])))
                             return

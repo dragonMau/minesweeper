@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 
-home = "d://Users/mseli/progs/minesweeper"
+home = "."
 
 def show_image(im, name='image'):
     cv2.imshow(name, im)
