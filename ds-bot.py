@@ -74,8 +74,8 @@ class MyBot(discord.Client):
             self.data["blown"] = {}
             for i in self.data["players"]:
                 self.data["blown"][i] = False
-            await message.reply(f"minesweeper, {mines=};\nplayers:\n  - "+\
-                "\n  - ".join(map(lambda e: e.name+'#'+e.discriminator,self.data['players']))+\
+            await message.reply(f"minesweeper, {mines=};\nplayers:\n  \- "+\
+                "\n  \- ".join(map(lambda e: e.name+'#'+e.discriminator,self.data['players']))+\
                 "\nsend `md!start` to start this game or `md!stop` to cancel")
         else:
             await message.reply(f"there is an active game")
@@ -118,8 +118,8 @@ class MyBot(discord.Client):
                 if "won" in r[1]:
                     await message.reply(f"All mines are defeated!", file=update_field(self.data["game"]))
                     self.data["game_id"] = 0
-                    await message.channel.send(f"results:\n  - "+\
-                    "\n  - ".join(map(lambda e: (":boom: " if self.data["blown"][e] else ":tada: ")+e.name+'#'+e.discriminator,
+                    await message.channel.send(f"results:\n  \- "+\
+                    "\n  \- ".join(map(lambda e: (":boom: " if self.data["blown"][e] else ":tada: ")+e.name+'#'+e.discriminator,
                                         self.data['players'])))
                 else:
                     self.data["game"].over = False
